@@ -48,6 +48,9 @@ h3 {
   color: #007bff;
 }
 
+p {
+    font-size: 14px;
+}
 /* Стили для текста и выделения */
 strong {
   color: #444;
