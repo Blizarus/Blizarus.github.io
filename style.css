@@ -1,0 +1,88 @@
+/* Общие стили для страниц глав */
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f9;
+  color: #333;
+}
+
+/* Стили для основного контейнера */
+.content {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Стили для навигации */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px auto;
+  max-width: 800px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+nav a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* Стили для заголовков */
+h1,
+h2,
+h3 {
+  color: #007bff;
+}
+
+/* Стили для текста и выделения */
+strong {
+  color: #444;
+}
+
+em {
+  font-style: italic;
+  color: #666;
+}
+
+/* Стили для pop-up заметок (подчеркнутые слова) */
+u {
+  text-decoration: underline;
+  color: #0056b3;
+  cursor: pointer;
+}
+
+u:hover {
+  color: #003f88;
+  text-decoration: none;
+}
+
+/* Медиа-запросы для адаптивности */
+@media (max-width: 768px) {
+  .content {
+    padding: 15px;
+  }
+
+  nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  nav a {
+    margin: 5px 0;
+    text-align: center;
+  }
+}
