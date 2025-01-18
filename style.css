@@ -19,22 +19,30 @@ body {
 /* Навигация */
 nav {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-wrap: wrap; /* Позволяет кнопкам переноситься на следующую строку при нехватке места */
+  justify-content: center; /* Центрует кнопки */
+  gap: 10px; /* Расстояние между кнопками */
   padding: 10px 20px;
   background-color: #68aac2;
   border-radius: 8px;
 }
 
-nav a {
+nav a,
+nav button {
+  flex: 1 1 auto; /* Кнопки растягиваются для равномерного заполнения */
+  max-width: 150px; /* Максимальная ширина кнопок */
+  text-align: center;
   color: #fff;
-  text-decoration: none;
   font-weight: bold;
+  text-decoration: none;
 }
 
-nav a:hover {
+
+nav a:hover,
+nav button:hover {
   text-decoration: underline;
 }
+
 
 /* Кнопки */
 .button {
@@ -75,7 +83,46 @@ h1 {
 
 /* Адаптивные стили */
 @media (max-width: 768px) {
+  nav a,
+  nav button {
+    max-width: 100%; /* Убираем фиксированную ширину на меньших экранах */
+  }
   body {
     font-size: 14px;
   }
+}
+
+/* Стили для модального окна */
+.modal-content {
+  background-color: #fff; /* Белый фон модального окна */
+  color: #333; /* Цвет текста */
+}
+
+.modal-header {
+  background-color: #68aac2; /* Цвет фона заголовка */
+  color: #fff; /* Цвет текста заголовка */
+  border-bottom: 1px solid #ccc;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.modal-body {
+  color: #333; /* Цвет текста внутри модального окна */
+}
+
+.list-group-item {
+  background-color: #fff;
+  color: #333;
+}
+
+.list-group-item a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.list-group-item a:hover {
+  text-decoration: underline;
 }
