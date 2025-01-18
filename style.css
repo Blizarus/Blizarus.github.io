@@ -1,135 +1,81 @@
-/* Общие стили для страниц глав */
+/* Общие стили */
 body {
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f9;
-    color: #333;
+  font-family: "Microsoft YaHei", Arial, sans-serif;
+  background-color: #f4f4f9;
+  color: #222;
+  line-height: 1.6;
+}
+
+/* Основной контейнер */
+.content {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Навигация */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #68aac2;
+  border-radius: 8px;
+}
+
+nav a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* Кнопки */
+.button {
+  padding: 10px;
+  color: #fff;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.lighton {
+  background: linear-gradient(to bottom, #fece34, #d8a605);
+  border: 1px solid #d2a000;
+}
+
+.lightoff {
+  background: linear-gradient(to bottom, #656565, #4a4a4a);
+  border: 1px solid #333;
+}
+
+.huyanon {
+  background: linear-gradient(to bottom, #90dfa2, #84d494);
+  border: 1px solid #64c878;
+}
+
+/* Контент */
+#content {
+  padding: 20px;
+  font-size: 18px;
+}
+
+/* Заголовки */
+h1 {
+  font-size: 24px;
+  color: #68aac2;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
   }
-  
-  /* Стили для основного контейнера */
-  .content {
-    max-width: 800px;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Стили для навигации */
-  nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 10px auto;
-    max-width: 800px;
-    padding: 10px 20px;
-    background-color: #007bff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  nav a {
-    color: #fff;
-    text-decoration: none;
-    font-weight: bold;
-  }
-  
-  nav a:hover {
-    text-decoration: underline;
-  }
-  
-  /* Стили для заголовков */
-  h1,
-  h2,
-  h3 {
-    color: #007bff;
-  }
-  
-  /* Стили для текста и выделения */
-  strong {
-    color: #444;
-  }
-  
-  em {
-    font-style: italic;
-    color: #666;
-  }
-  
-  /* Стили для pop-up заметок (подчеркнутые слова) */
-  u {
-    text-decoration: underline;
-    color: #0056b3;
-    cursor: pointer;
-  }
-  
-  u:hover {
-    color: #003f88;
-    text-decoration: none;
-  }
-  
-  /* Медиа-запросы для адаптивности */
-  @media (max-width: 768px) {
-    body {
-      font-size: 14px;
-    }
-  
-    .content {
-      padding: 15px;
-      margin: 10px;
-    }
-  
-    nav {
-      flex-direction: column;
-      align-items: stretch;
-      padding: 10px;
-    }
-  
-    nav a {
-      margin: 5px 0;
-      text-align: center;
-      font-size: 16px;
-    }
-  
-    h1 {
-      font-size: 24px;
-    }
-  
-    h2 {
-      font-size: 20px;
-    }
-  
-    h3 {
-      font-size: 18px;
-    }
-  }
-  
-  /* Дополнительные стили для сверхмалых экранов */
-  @media (max-width: 480px) {
-    body {
-      font-size: 13px;
-    }
-  
-    .content {
-      padding: 10px;
-    }
-  
-    nav a {
-      font-size: 14px;
-    }
-  
-    h1 {
-      font-size: 22px;
-    }
-  
-    h2 {
-      font-size: 18px;
-    }
-  
-    h3 {
-      font-size: 16px;
-    }
-  }
-  
+}
