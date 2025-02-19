@@ -1,128 +1,239 @@
 /* Общие стили */
 body {
-  font-family: "Microsoft YaHei", Arial, sans-serif;
-  background-color: #f4f4f9;
-  color: #222;
-  line-height: 1.6;
+  font-family: "Georgia", serif;
+  background-color: #a3c6e9;
+  color: #333;
+  line-height: 1.8;
 }
 
 /* Основной контейнер */
-.content {
+.container {
   max-width: 800px;
-  margin: 20px auto;
+  margin: 0 auto;
   padding: 20px;
+}
+
+/* Контент */
+.content {
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Навигация */
 nav {
-  display: flex;
-  flex-wrap: wrap; /* Позволяет кнопкам переноситься на следующую строку при нехватке места */
-  justify-content: center; /* Центрует кнопки */
-  gap: 10px; /* Расстояние между кнопками */
+  margin: 20px 0;
+}
+
+nav .btn {
+  font-size: 16px;
   padding: 10px 20px;
-  background-color: #68aac2;
   border-radius: 8px;
+  transition: background-color 0.3s ease;
 }
 
-nav a,
-nav button {
-  flex: auto; /* Кнопки растягиваются для равномерного заполнения */
-  max-width: 150px; /* Максимальная ширина кнопок */
-  text-align: center;
-  color: #fff;
-  font-weight: bold;
-  text-decoration: none;
-}
-
-
-nav a:hover,
-nav button:hover {
-  text-decoration: underline;
-}
-
-
-/* Кнопки */
-.button {
-  padding: 10px;
-  color: #fff;
-  border-radius: 5px;
-  text-align: center;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.lighton {
-  background: linear-gradient(to bottom, #fece34, #d8a605);
-  border: 1px solid #d2a000;
-}
-
-.lightoff {
-  background: linear-gradient(to bottom, #656565, #4a4a4a);
-  border: 1px solid #333;
-}
-
-.huyanon {
-  background: linear-gradient(to bottom, #90dfa2, #84d494);
-  border: 1px solid #64c878;
-}
-
-/* Контент */
-#content {
-  padding: 20px;
-  font-size: 18px;
+nav .btn:hover {
+  opacity: 0.9;
 }
 
 /* Заголовки */
 h1 {
-  font-size: 24px;
-  color: #68aac2;
+  font-size: 28px;
+  color: #2c3e50;
+  margin-bottom: 20px;
 }
 
 /* Адаптивные стили */
 @media (max-width: 768px) {
-  nav a,
-  nav button {
-    max-width: 100%; /* Убираем фиксированную ширину на меньших экранах */
+  nav .btn {
+    width: 100%;
+    margin-bottom: 10px;
   }
-  body {
-    font-size: 14px;
+
+  h1 {
+    font-size: 24px;
   }
 }
 
 /* Стили для модального окна */
 .modal-content {
-  background-color: #fff; /* Белый фон модального окна */
-  color: #333; /* Цвет текста */
+  border-radius: 10px;
 }
 
 .modal-header {
-  background-color: #68aac2; /* Цвет фона заголовка */
-  color: #fff; /* Цвет текста заголовка */
-  border-bottom: 1px solid #ccc;
+  background-color: #2c3e50;
+  color: #fff;
+  border-bottom: none;
 }
 
 .modal-title {
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 20px;
 }
 
 .modal-body {
-  color: #333; /* Цвет текста внутри модального окна */
+  padding: 20px;
 }
 
 .list-group-item {
-  background-color: #fff;
-  color: #333;
+  border: none;
+  padding: 10px 15px;
 }
 
 .list-group-item a {
-  color: #0066cc;
+  color: #2c3e50;
   text-decoration: none;
 }
 
 .list-group-item a:hover {
+  color: #1a73e8;
   text-decoration: underline;
+}
+
+/* Стили для выбора цвета фона */
+.bg-chooser {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.bgchoose {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.bgchoose li {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.bgchoose li:hover {
+  transform: scale(1.1);
+  border-color: #2c3e50;
+}
+
+.bgchoose li.active {
+  border-color: #2c3e50;
+  transform: scale(1.1);
+}
+/* Кнопки в модальном окне */
+.btn-warning {
+  background-color: #ffc107;
+  border: none;
+  color: #2c3e50;
+  font-weight: bold;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+}
+
+/* Стили для цветных квадратиков */
+.color-box {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.color-box:hover {
+  transform: scale(1.1);
+  border-color: #2c3e50;
+}
+
+.color-box.active {
+  border-color: #2c3e50;
+  transform: scale(1.1);
+}
+
+#backToTopBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: none; /* Изначально скрыта */
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+#backToTopBtn:hover {
+  background-color: #0056b3;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.novel-header {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.novel-header h1 {
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.novel-header p {
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.chapter-card {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chapter-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.chapter-card a {
+  text-decoration: none;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.chapter-card a:hover {
+  color: #007bff;
+}
+
+.btn-home {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-home:hover {
+  background-color: #0056b3;
 }
