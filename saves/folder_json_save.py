@@ -6,9 +6,9 @@ from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
 
 # Ссылки
-BASE_URL = "https://chrysanthemumgarden.com/novel-tl/aputffzg/"  # Главная страница
-FIRST_CHAPTER_URL = f"{BASE_URL}aputffzg-1/"  # Первая глава
-SITE_DIR = "site/Blizarus.github.io/novels/aputffzg"
+BASE_URL = "https://chrysanthemumgarden.com/novel-tl/ffml/"  # Главная страница
+FIRST_CHAPTER_URL = f"{BASE_URL}ffml-1/"  # Первая глава
+SITE_DIR = "site/Blizarus.github.io/novels/ffml"
 
 os.makedirs(os.path.join(SITE_DIR, "chapters"), exist_ok=True)
 
