@@ -4,11 +4,20 @@ import json
 from collections import defaultdict, Counter
 from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
+from index_generate import generate_index
 
 # Ссылки
-BASE_URL = "https://chrysanthemumgarden.com/novel-tl/tire/"  # Главная страница
-FIRST_CHAPTER_URL = f"{BASE_URL}tire-1/"  # Первая глава
-SITE_DIR = "site/Blizarus.github.io/novels/tire"
+# Исходный BASE_URL
+BASE_URL = "https://chrysanthemumgarden.com/novel-tl/tire/"
+
+# Извлекаем последнюю часть BASE_URL (после последнего '/')
+last_part = BASE_URL.rstrip('/').split('/')[-1]  # Результат: "tire"
+
+# Формируем FIRST_CHAPTER_URL
+FIRST_CHAPTER_URL = f"{BASE_URL}{last_part}-1/"
+
+# Формируем SITE_DIR
+SITE_DIR = f"site/Blizarus.github.io/novels/{last_part}"
 
 os.makedirs(os.path.join(SITE_DIR, "chapters"), exist_ok=True)
 
@@ -140,3 +149,4 @@ with open(os.path.join(SITE_DIR, "novel.json"), "w", encoding="utf-8") as novel_
     json.dump(novel_info, novel_file, ensure_ascii=False, indent=4)
 
 print(f"Data saved to '{SITE_DIR}'")
+generate_index()
