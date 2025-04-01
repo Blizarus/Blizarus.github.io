@@ -118,21 +118,45 @@
         
         <button class="split-btn" onclick="splitTextBySentences()">Разделить текст</button>
         <button class="save-btn" onclick="saveChunkSize()">Запомнить размер</button>
-        <button class="clear-btn" onclick="clearText()">Очистить текст</button>
+        <button class="clear-btn" onclick="clearText()">Очистить всё</button>
     </div>
     <div class="info">Текст будет разделён по предложениям, даже если это означает, что часть будет меньше указанного размера.</div>
     
     <div id="result" class="result"></div>
 
     <script>
+        // Сохраняем состояние приложения
+        const APP_STATE = {
+            inputText: '',
+            chunkSize: 500,
+            resultHTML: ''
+        };
+
+        // Загружаем сохранённые данные при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            const savedChunkSize = localStorage.getItem('chunkSize');
-            if (savedChunkSize) {
-                document.getElementById('chunkSize').value = savedChunkSize;
-            } else {
-                document.getElementById('chunkSize').value = 500;
+            // Загружаем сохранённые данные из localStorage
+            const savedState = localStorage.getItem('textSplitterState');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                APP_STATE.inputText = state.inputText;
+                APP_STATE.chunkSize = state.chunkSize;
+                APP_STATE.resultHTML = state.resultHTML;
             }
+
+            // Восстанавливаем состояние интерфейса
+            document.getElementById('inputText').value = APP_STATE.inputText;
+            document.getElementById('chunkSize').value = APP_STATE.chunkSize;
+            document.getElementById('result').innerHTML = APP_STATE.resultHTML;
         });
+
+        // Функция для сохранения текущего состояния
+        function saveState() {
+            APP_STATE.inputText = document.getElementById('inputText').value;
+            APP_STATE.chunkSize = document.getElementById('chunkSize').value;
+            APP_STATE.resultHTML = document.getElementById('result').innerHTML;
+            
+            localStorage.setItem('textSplitterState', JSON.stringify(APP_STATE));
+        }
 
         function saveChunkSize() {
             const chunkSize = document.getElementById('chunkSize').value;
@@ -141,13 +165,19 @@
                 return;
             }
             
-            localStorage.setItem('chunkSize', chunkSize);
+            APP_STATE.chunkSize = chunkSize;
+            saveState();
             alert(`Значение ${chunkSize} сохранено!`);
         }
 
         function clearText() {
-            document.getElementById('inputText').value = '';
-            document.getElementById('result').innerHTML = '';
+            if (confirm('Вы действительно хотите очистить текст и результаты?')) {
+                document.getElementById('inputText').value = '';
+                document.getElementById('result').innerHTML = '';
+                APP_STATE.inputText = '';
+                APP_STATE.resultHTML = '';
+                saveState();
+            }
         }
 
         function splitIntoSentences(text) {
@@ -181,14 +211,8 @@
             }
             
             if (isNaN(maxChunkSize) || maxChunkSize <= 0) {
-                const savedChunkSize = localStorage.getItem('chunkSize');
-                if (savedChunkSize) {
-                    maxChunkSize = parseInt(savedChunkSize);
-                    chunkSizeInput.value = maxChunkSize;
-                } else {
-                    alert('Пожалуйста, введите корректное количество символов');
-                    return;
-                }
+                maxChunkSize = APP_STATE.chunkSize || 500;
+                chunkSizeInput.value = maxChunkSize;
             }
             
             const sentences = splitIntoSentences(inputText);
@@ -225,6 +249,9 @@
             if (currentChunk) {
                 createChunkPart(currentChunk, partNumber);
             }
+            
+            // Сохраняем состояние после разделения
+            saveState();
             
             function createChunkPart(text, number) {
                 const partDiv = document.createElement('div');
