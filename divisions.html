@@ -171,13 +171,11 @@
         }
 
         function clearText() {
-            if (confirm('Вы действительно хотите очистить текст и результаты?')) {
                 document.getElementById('inputText').value = '';
                 document.getElementById('result').innerHTML = '';
                 APP_STATE.inputText = '';
                 APP_STATE.resultHTML = '';
                 saveState();
-            }
         }
 
         function splitIntoSentences(text) {
