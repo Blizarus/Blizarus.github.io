@@ -3,9 +3,14 @@ meta:
   toolchain:
     name: pip
     version: 3.8
+
 build:
   requirementsPath: requirements.txt
+
 run:
-  scriptName: folder_json_save.py
-  persistenceMount: /data
-  containerPort: 80
+  scriptName: app.py  # Укажите основной файл для запуска
+  persistenceMount: /data  # Укажите путь для сохранения данных
+  containerPort: 5000  # Укажите порт, который использует Flask
+
+  # Если нужно указать команду для запуска
+  command: python app.py

@@ -5,10 +5,16 @@ from collections import defaultdict, Counter
 from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
 from index_generate import generate_index
+import argparse
+
+# Добавьте в начало скрипта
+parser = argparse.ArgumentParser()
+parser.add_argument('--base_url', type=str, required=True, help='Base URL of the novel')
+args = parser.parse_args()
 
 # Ссылки
 # Исходный BASE_URL
-BASE_URL = "https://chrysanthemumgarden.com/novel-tl/tire/"
+BASE_URL = args.base_url
 
 # Извлекаем последнюю часть BASE_URL (после последнего '/')
 last_part = BASE_URL.rstrip('/').split('/')[-1]  # Результат: "tire"

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Разделитель текста по предложениям</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            white-space: pre;
+        }
+        input {
+            width: 100px;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .split-btn {
+            background-color: #4CAF50;
+        }
+        .split-btn:hover {
+            background-color: #45a049;
+        }
+        .save-btn {
+            background-color: #607d8b;
+        }
+        .save-btn:hover {
+            background-color: #546e7a;
+        }
+        .clear-btn {
+            background-color: #f44336;
+        }
+        .clear-btn:hover {
+            background-color: #d32f2f;
+        }
+        .copy-btn {
+            background-color: #2196F3;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background-color: #0b7dda;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        .part {
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .part-header {
+            padding: 10px;
+            background-color: #f5f5f5;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .part-content {
+            padding: 10px;
+            display: none;
+            background-color: white;
+            white-space: pre-wrap;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .part.active .part-content {
+            display: block;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .info {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Разделитель текста по предложениям</h1>
+    <p>Введите текст и укажите максимальное количество символов для части (текст будет разделён по предложениям):</p>
+    
+    <textarea id="inputText" placeholder="Введите текст здесь..."></textarea><br>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label for="chunkSize">Макс. символов:</label>
+            <input type="number" id="chunkSize" min="1">
+        </div>
+        
+        <button class="split-btn" onclick="splitTextBySentences()">Разделить текст</button>
+        <button class="save-btn" onclick="saveChunkSize()">Запомнить размер</button>
+        <button class="clear-btn" onclick="clearText()">Очистить текст</button>
+    </div>
+    <div class="info">Текст будет разделён по предложениям, даже если это означает, что часть будет меньше указанного размера.</div>
+    
+    <div id="result" class="result"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedChunkSize = localStorage.getItem('chunkSize');
+            if (savedChunkSize) {
+                document.getElementById('chunkSize').value = savedChunkSize;
+            } else {
+                document.getElementById('chunkSize').value = 500;
+            }
+        });
+
+        function saveChunkSize() {
+            const chunkSize = document.getElementById('chunkSize').value;
+            if (!chunkSize || isNaN(chunkSize) || chunkSize <= 0) {
+                alert('Пожалуйста, введите корректное количество символов');
+                return;
+            }
+            
+            localStorage.setItem('chunkSize', chunkSize);
+            alert(`Значение ${chunkSize} сохранено!`);
+        }
+
+        function clearText() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('result').innerHTML = '';
+        }
+
+        function splitIntoSentences(text) {
+            const paragraphs = text.split(/\n/);
+            const sentences = [];
+            
+            for (const paragraph of paragraphs) {
+                if (!paragraph.trim()) {
+                    sentences.push('\n');
+                    continue;
+                }
+                
+                const sentenceRegex = /[^.!?。！？…]+[.!?。！？…]+[\])'"`’”]*\s*/gu;
+                const paraSentences = paragraph.match(sentenceRegex) || [paragraph];
+                
+                sentences.push(...paraSentences.map(s => s.trim()));
+                sentences.push('\n');
+            }
+            
+            return sentences.filter(s => s.length > 0);
+        }
+
+        function splitTextBySentences() {
+            const inputText = document.getElementById('inputText').value;
+            const chunkSizeInput = document.getElementById('chunkSize');
+            let maxChunkSize = parseInt(chunkSizeInput.value);
+            
+            if (!inputText) {
+                alert('Пожалуйста, введите текст');
+                return;
+            }
+            
+            if (isNaN(maxChunkSize) || maxChunkSize <= 0) {
+                const savedChunkSize = localStorage.getItem('chunkSize');
+                if (savedChunkSize) {
+                    maxChunkSize = parseInt(savedChunkSize);
+                    chunkSizeInput.value = maxChunkSize;
+                } else {
+                    alert('Пожалуйста, введите корректное количество символов');
+                    return;
+                }
+            }
+            
+            const sentences = splitIntoSentences(inputText);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            
+            if (sentences.length === 0) {
+                sentences.push(inputText);
+            }
+            
+            let currentChunk = '';
+            let currentChunkSize = 0;
+            let partNumber = 1;
+            
+            for (const sentence of sentences) {
+                const sentenceLength = sentence.length;
+                
+                if (sentence === '\n') {
+                    currentChunk += '\n';
+                    currentChunkSize += 1;
+                    continue;
+                }
+                
+                if (currentChunkSize + sentenceLength > maxChunkSize && currentChunkSize > 0) {
+                    createChunkPart(currentChunk, partNumber++);
+                    currentChunk = sentence;
+                    currentChunkSize = sentenceLength;
+                } else {
+                    currentChunk += sentence;
+                    currentChunkSize += sentenceLength;
+                }
+            }
+            
+            if (currentChunk) {
+                createChunkPart(currentChunk, partNumber);
+            }
+            
+            function createChunkPart(text, number) {
+                const partDiv = document.createElement('div');
+                partDiv.className = 'part';
+                
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'part-header';
+                headerDiv.innerHTML = `<span>Часть ${number} (${text.length} символов)</span>`;
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = 'Копировать';
+                copyBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(text).then(() => {
+                        copyBtn.textContent = 'Скопировано!';
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Копировать';
+                        }, 2000);
+                    });
+                };
+                
+                headerDiv.appendChild(copyBtn);
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'part-content';
+                contentDiv.textContent = text;
+                
+                partDiv.appendChild(headerDiv);
+                partDiv.appendChild(contentDiv);
+                
+                headerDiv.addEventListener('click', () => {
+                    partDiv.classList.toggle('active');
+                });
+                
+                resultDiv.appendChild(partDiv);
+            }
+        }
+    </script>
+</body>
+</html>
