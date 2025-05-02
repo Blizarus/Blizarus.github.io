@@ -49,6 +49,18 @@
         .clear-btn:hover {
             background-color: #d32f2f;
         }
+        .paste-btn {
+            background-color: #9c27b0;
+        }
+        .paste-btn:hover {
+            background-color: #7b1fa2;
+        }
+        .clean-btn {
+            background-color: #ff9800;
+        }
+        .clean-btn:hover {
+            background-color: #f57c00;
+        }
         .copy-btn {
             background-color: #2196F3;
             padding: 5px 10px;
@@ -117,6 +129,8 @@
         </div>
         
         <button class="split-btn" onclick="splitTextBySentences()">Разделить текст</button>
+        <button class="paste-btn" onclick="pasteFromClipboard()">Вставить текст</button>
+        <button class="clean-btn" onclick="cleanText()">Очистить от мусора</button>
         <button class="save-btn" onclick="saveChunkSize()">Запомнить размер</button>
         <button class="clear-btn" onclick="clearText()">Очистить всё</button>
     </div>
@@ -158,6 +172,60 @@
             localStorage.setItem('textSplitterState', JSON.stringify(APP_STATE));
         }
 
+        // Функция для вставки текста из буфера обмена
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('inputText').value = text;
+                saveState();
+            } catch (err) {
+                alert('Не удалось получить доступ к буферу обмена. Возможно, нужно разрешить доступ или использовать сочетание клавиш Ctrl+V');
+                console.error('Ошибка доступа к буферу обмена:', err);
+            }
+        }
+
+        // Функция для очистки текста от мусора
+        function cleanText() {
+            const inputText = document.getElementById('inputText').value;
+            if (!inputText) {
+                alert('Пожалуйста, введите текст или вставьте его из буфера обмена');
+                return;
+            }
+
+            // Удаляем текст до "上一章 目錄 下一章"
+            const startMarker = "上一章 目錄 下一章";
+            const endMarker = "上一章 目錄 下一章";
+            
+            let startIndex = inputText.indexOf(startMarker);
+            let endIndex = inputText.lastIndexOf(endMarker);
+            
+            let cleanedText = inputText;
+            
+            if (startIndex !== -1 && endIndex !== -1 && startIndex !== endIndex) {
+                // Находим начало основного текста (после первого маркера)
+                startIndex = inputText.indexOf('\n', startIndex + startMarker.length);
+                if (startIndex === -1) startIndex = inputText.indexOf(startMarker) + startMarker.length;
+                
+                // Находим конец основного текста (перед последним маркером)
+                endIndex = inputText.lastIndexOf(endMarker);
+                
+                // Извлекаем основной текст
+                cleanedText = inputText.substring(startIndex, endIndex).trim();
+                
+                // Удаляем рекламные блоки и другие ненужные части
+                cleanedText = cleanedText.replace(/相關推薦：.*$/gmi, '');
+                cleanedText = cleanedText.replace(/快速搜索.*$/gmi, '');
+                cleanedText = cleanedText.replace(/書寶網完本.*$/gmi, '');
+                cleanedText = cleanedText.replace(/©.*$/gmi, '');
+                cleanedText = cleanedText.replace(/Privacy.*$/gmi, '');
+                cleanedText = cleanedText.replace(/\[.*?\]/g, '');
+                cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n'); // Удаляем лишние переносы строк
+            }
+            
+            document.getElementById('inputText').value = cleanedText;
+            saveState();
+        }
+
         function saveChunkSize() {
             const chunkSize = document.getElementById('chunkSize').value;
             if (!chunkSize || isNaN(chunkSize) || chunkSize <= 0) {
@@ -171,11 +239,11 @@
         }
 
         function clearText() {
-                document.getElementById('inputText').value = '';
-                document.getElementById('result').innerHTML = '';
-                APP_STATE.inputText = '';
-                APP_STATE.resultHTML = '';
-                saveState();
+            document.getElementById('inputText').value = '';
+            document.getElementById('result').innerHTML = '';
+            APP_STATE.inputText = '';
+            APP_STATE.resultHTML = '';
+            saveState();
         }
 
         function splitIntoSentences(text) {
