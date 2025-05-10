@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парсер и нарезчик глав</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .fetch-btn {
+            background-color: #4CAF50;
+        }
+        .fetch-btn:hover {
+            background-color: #45a049;
+        }
+        .split-btn {
+            background-color: #2196F3;
+        }
+        .split-btn:hover {
+            background-color: #0b7dda;
+        }
+        .save-btn {
+            background-color: #607d8b;
+        }
+        .save-btn:hover {
+            background-color: #546e7a;
+        }
+        .nav-btn {
+            background-color: #9c27b0;
+        }
+        .nav-btn:hover {
+            background-color: #7b1fa2;
+        }
+        .nav-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #4CAF50;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #d32f2f;
+            margin-top: 10px;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        .part {
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .part-header {
+            padding: 10px;
+            background-color: #f5f5f5;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .part-content {
+            padding: 10px;
+            display: none;
+            background-color: white;
+            white-space: pre-wrap;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .part.active .part-content {
+            display: block;
+        }
+        .copy-btn {
+            background-color: #9c27b0;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background-color: #7b1fa2;
+        }
+        .info {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        #chapter-text {
+            width: 100%;
+            height: 200px;
+            margin-top: 10px;
+            display: none;
+        }
+        .navigation {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Парсер и нарезчик глав</h1>
+        
+        <div class="input-group">
+            <input type="text" id="url-input" placeholder="Введите URL главы (например, https://www.zhenhunxiaoshuo.com/311349.html)">
+            <button class="fetch-btn" id="fetch-btn">Получить главу</button>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prev-btn" disabled>Предыдущая глава</button>
+            <button class="nav-btn" id="next-btn" disabled>Следующая глава</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Загружаем главу...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <textarea id="chapter-text" readonly></textarea>
+        
+        <div class="control-group">
+            <label for="chunkSize">Макс. символов:</label>
+            <input type="number" id="chunkSize" min="1" value="500">
+            <button class="save-btn" onclick="saveChunkSize()">Сохранить размер</button>
+        </div>
+        
+        <button class="split-btn" id="split-btn" style="display: none;">Разделить текст</button>
+        
+        <div class="info">Текст будет разделён по предложениям, даже если это означает, что часть будет меньше указанного размера.</div>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlInput = document.getElementById('url-input');
+            const fetchBtn = document.getElementById('fetch-btn');
+            const splitBtn = document.getElementById('split-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const chapterText = document.getElementById('chapter-text');
+            const resultDiv = document.getElementById('result');
+            const chunkSizeInput = document.getElementById('chunkSize');
+            
+            let currentChapterNumber = 0;
+            let baseUrl = '';
+            
+            // Загружаем сохранённый размер чанка
+            const savedChunkSize = localStorage.getItem('chunkSize');
+            if (savedChunkSize) {
+                chunkSizeInput.value = savedChunkSize;
+            }
+            
+            fetchBtn.addEventListener('click', async function() {
+                await loadChapter(urlInput.value);
+            });
+            
+            prevBtn.addEventListener('click', async function() {
+                if (currentChapterNumber > 1) {
+                    await loadChapter(baseUrl + (currentChapterNumber - 1) + '.html');
+                }
+            });
+            
+            nextBtn.addEventListener('click', async function() {
+                await loadChapter(baseUrl + (currentChapterNumber + 1) + '.html');
+            });
+            
+            splitBtn.addEventListener('click', function() {
+                splitTextBySentences();
+            });
+            
+            async function loadChapter(url) {
+                const urlMatch = url.match(/^(.*\/)(\d+)(\.html)$/);
+                if (!urlMatch) {
+                    showError('Некорректный URL главы');
+                    return;
+                }
+                
+                baseUrl = urlMatch[1];
+                currentChapterNumber = parseInt(urlMatch[2]);
+                const urlSuffix = urlMatch[3];
+                
+                try {
+                    loading.style.display = 'block';
+                    errorDiv.textContent = '';
+                    resultDiv.innerHTML = '';
+                    splitBtn.style.display = 'none';
+                    chapterText.style.display = 'none';
+                    
+                    const fullUrl = baseUrl + currentChapterNumber + urlSuffix;
+                    const text = await fetchChapterContent(fullUrl);
+                    
+                    if (text) {
+                        urlInput.value = fullUrl;
+                        chapterText.value = text;
+                        chapterText.style.display = 'block';
+                        splitBtn.style.display = 'inline-block';
+                        
+                        // Обновляем состояние кнопок навигации
+                        prevBtn.disabled = currentChapterNumber <= 1;
+                        nextBtn.disabled = false;
+                    } else {
+                        showError('Не удалось получить содержимое главы');
+                    }
+                } catch (error) {
+                    showError('Ошибка при загрузке: ' + error.message);
+                    console.error(error);
+                } finally {
+                    loading.style.display = 'none';
+                }
+            }
+            
+            function showError(message) {
+                errorDiv.textContent = message;
+            }
+            
+            async function fetchChapterContent(url) {
+                try {
+                    // Используем CORS proxy для обхода ограничений CORS
+                    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+                    const response = await fetch(proxyUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error('Сетевая ошибка: ' + response.status);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Проверяем, есть ли содержимое
+                    if (!data.contents) {
+                        throw new Error("Глава не найдена");
+                    }
+                    
+                    // Создаем DOM-парсер
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(data.contents, 'text/html');
+                    
+                    // Находим контент (адаптируйте под нужную структуру сайта)
+                    const article = doc.querySelector('article.article-content');
+                    if (!article) {
+                        throw new Error("Не удалось найти блок с текстом главы");
+                    }
+                    
+                    // Собираем текст из параграфов
+                    const paragraphs = Array.from(article.querySelectorAll('p'))
+                        .map(p => p.textContent.trim())
+                        .filter(text => text.length > 0);
+                    
+                    // Очищаем текст от мусора
+                    let cleanedText = paragraphs.join('\n\n');
+                    cleanedText = cleanedText.replace(/上一章 目錄 下一章/g, '');
+                    cleanedText = cleanedText.replace(/相關推薦：.*$/gmi, '');
+                    cleanedText = cleanedText.replace(/快速搜索.*$/gmi, '');
+                    cleanedText = cleanedText.replace(/書寶網完本.*$/gmi, '');
+                    cleanedText = cleanedText.replace(/©.*$/gmi, '');
+                    cleanedText = cleanedText.replace(/Privacy.*$/gmi, '');
+                    cleanedText = cleanedText.replace(/\[.*?\]/g, '');
+                    cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n');
+                    
+                    return cleanedText;
+                } catch (error) {
+                    console.error('Ошибка при парсинге:', error);
+                    throw error;
+                }
+            }
+            
+            function saveChunkSize() {
+                const chunkSize = chunkSizeInput.value;
+                if (!chunkSize || isNaN(chunkSize)) {
+                    alert('Пожалуйста, введите корректное количество символов');
+                    return;
+                }
+                
+                localStorage.setItem('chunkSize', chunkSize);
+                alert(`Значение ${chunkSize} сохранено!`);
+            }
+            
+            function splitIntoSentences(text) {
+                const paragraphs = text.split(/\n/);
+                const sentences = [];
+                
+                for (const paragraph of paragraphs) {
+                    if (!paragraph.trim()) {
+                        sentences.push('\n');
+                        continue;
+                    }
+                    
+                    const sentenceRegex = /[^.!?。！？…]+[.!?。！？…]+[\])'"`’”]*\s*/gu;
+                    const paraSentences = paragraph.match(sentenceRegex) || [paragraph];
+                    
+                    sentences.push(...paraSentences.map(s => s.trim()));
+                    sentences.push('\n');
+                }
+                
+                return sentences.filter(s => s.length > 0);
+            }
+            
+            function splitTextBySentences() {
+                const text = chapterText.value;
+                let maxChunkSize = parseInt(chunkSizeInput.value);
+                
+                if (!text) {
+                    alert('Пожалуйста, сначала получите текст главы');
+                    return;
+                }
+                
+                if (isNaN(maxChunkSize) || maxChunkSize <= 0) {
+                    maxChunkSize = 500;
+                    chunkSizeInput.value = maxChunkSize;
+                }
+                
+                const sentences = splitIntoSentences(text);
+                resultDiv.innerHTML = '';
+                
+                if (sentences.length === 0) {
+                    sentences.push(text);
+                }
+                
+                let currentChunk = '';
+                let currentChunkSize = 0;
+                let partNumber = 1;
+                
+                for (const sentence of sentences) {
+                    const sentenceLength = sentence.length;
+                    
+                    if (sentence === '\n') {
+                        currentChunk += '\n';
+                        currentChunkSize += 1;
+                        continue;
+                    }
+                    
+                    if (currentChunkSize + sentenceLength > maxChunkSize && currentChunkSize > 0) {
+                        createChunkPart(currentChunk, partNumber++);
+                        currentChunk = sentence;
+                        currentChunkSize = sentenceLength;
+                    } else {
+                        currentChunk += sentence;
+                        currentChunkSize += sentenceLength;
+                    }
+                }
+                
+                if (currentChunk) {
+                    createChunkPart(currentChunk, partNumber);
+                }
+                
+                function createChunkPart(text, number) {
+                    const partDiv = document.createElement('div');
+                    partDiv.className = 'part';
+                    
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'part-header';
+                    headerDiv.innerHTML = `<span>Часть ${number} (${text.length} символов)</span>`;
+                    
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.textContent = 'Копировать';
+                    copyBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(text).then(() => {
+                            copyBtn.textContent = 'Скопировано!';
+                            setTimeout(() => {
+                                copyBtn.textContent = 'Копировать';
+                            }, 2000);
+                        });
+                    };
+                    
+                    headerDiv.appendChild(copyBtn);
+                    
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'part-content';
+                    contentDiv.textContent = text;
+                    
+                    partDiv.appendChild(headerDiv);
+                    partDiv.appendChild(contentDiv);
+                    
+                    headerDiv.addEventListener('click', () => {
+                        partDiv.classList.toggle('active');
+                    });
+                    
+                    resultDiv.appendChild(partDiv);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
