@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Менеджер ключей</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --input-bg: #f4f4f4;
+            --border-color: #dddddd;
+            --primary-btn: #5cb85c;
+            --primary-btn-hover: #4cae4c;
+            --copy-btn: #337ab7;
+            --use-btn: #f0ad4e;
+            --remove-btn: #d9534f;
+            --key-item-bg: #ffffff;
+            --key-item-used-bg: #f9f9f9;
+            --key-item-border: #eeeeee;
+        }
+
+        .dark-mode {
+            --bg-color: #1e1e1e;
+            --text-color: #f0f0f0;
+            --input-bg: #2d2d2d;
+            --border-color: #444444;
+            --primary-btn: #388e3c;
+            --primary-btn-hover: #2e7d32;
+            --copy-btn: #1565c0;
+            --use-btn: #ff8f00;
+            --remove-btn: #c62828;
+            --key-item-bg: #2d2d2d;
+            --key-item-used-bg: #252525;
+            --key-item-border: #444444;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        .input-section {
+            background: var(--input-bg);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        button {
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            background: #cccccc !important;
+            cursor: not-allowed;
+        }
+
+        .key-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid var(--key-item-border);
+            margin-bottom: 5px;
+            border-radius: 4px;
+            background-color: var(--key-item-bg);
+            transition: all 0.3s;
+        }
+
+        .key-item.used {
+            background-color: var(--key-item-used-bg);
+            color: #999;
+        }
+
+        .key-name {
+            font-weight: bold;
+            min-width: 100px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .key-value-container {
+            position: relative;
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+
+        .key-value {
+            font-family: monospace;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        .key-value:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .key-value:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .key-value.full {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            z-index: 10;
+            white-space: normal;
+            word-break: break-all;
+            max-width: 300px;
+            display: none;
+        }
+
+        .key-value-container:hover .key-value.full {
+            display: block;
+        }
+
+        .time-left {
+            font-size: 0.8em;
+            min-width: 120px;
+            text-align: right;
+            margin-right: 10px;
+            font-family: monospace;
+        }
+
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        #addKeyBtn {
+            background: var(--primary-btn);
+        }
+
+        #addKeyBtn:hover {
+            background: var(--primary-btn-hover);
+        }
+
+        .copy-btn {
+            background: var(--copy-btn);
+        }
+
+        .use-btn {
+            background: var(--use-btn);
+        }
+
+        .remove-btn {
+            background: var(--remove-btn);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--primary-btn);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            display: none;
+            z-index: 100;
+        }
+
+        .theme-toggle {
+            background: var(--primary-btn);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 auto 20px;
+            display: table;
+        }
+    </style>
+</head>
+<body>
+    <h1>Менеджер ключей</h1>
+    <div class="theme-toggle" id="themeToggle">🌙 Тёмная тема</div>
+    
+    <div class="input-section">
+        <h2>Добавить новый ключ</h2>
+        <input type="text" id="keyName" placeholder="Название ключа" style="width: 100%;">
+        <input type="text" id="keyValue" placeholder="Значение ключа" style="width: 100%;">
+        <button id="addKeyBtn">Добавить ключ</button>
+    </div>
+    
+    <h2>Мои ключи</h2>
+    <div id="keysList"></div>
+    
+    <div class="notification" id="notification">Ключ скопирован!</div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addKeyBtn = document.getElementById('addKeyBtn');
+            const keyNameInput = document.getElementById('keyName');
+            const keyValueInput = document.getElementById('keyValue');
+            const keysList = document.getElementById('keysList');
+            const notification = document.getElementById('notification');
+            const themeToggle = document.getElementById('themeToggle');
+            
+            // Загружаем настройки темы из localStorage
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+                themeToggle.textContent = '☀️ Светлая тема';
+            }
+            
+            // Загружаем ключи из localStorage при загрузке страницы
+            let keys = JSON.parse(localStorage.getItem('keys')) || [];
+            
+            // Отображаем ключи
+            renderKeys();
+            
+            // Таймер для обновления отсчёта времени
+            let updateTimer = setInterval(updateTimers, 1000);
+            
+            // Переключение темы
+            themeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                localStorage.setItem('darkMode', isDark);
+                themeToggle.textContent = isDark ? '☀️ Светлая тема' : '🌙 Тёмная тема';
+            });
+            
+            // Добавление нового ключа
+            addKeyBtn.addEventListener('click', function() {
+                const name = keyNameInput.value.trim();
+                const value = keyValueInput.value.trim();
+                
+                if (name && value) {
+                    keys.push({
+                        id: Date.now(),
+                        name: name,
+                        value: value,
+                        used: false,
+                        usedAt: null
+                    });
+                    
+                    saveKeys();
+                    renderKeys();
+                    
+                    keyNameInput.value = '';
+                    keyValueInput.value = '';
+                }
+            });
+            
+            // Функция для отметки ключа как использованного (блокировка на 24 часа)
+            function markAsUsed(keyId) {
+                keys = keys.map(key => {
+                    if (key.id === keyId) {
+                        return {
+                            ...key,
+                            used: true,
+                            usedAt: new Date().getTime()
+                        };
+                    }
+                    return key;
+                });
+                
+                saveKeys();
+                renderKeys();
+            }
+            
+            // Функция для удаления ключа
+            function removeKey(keyId) {
+                if (confirm('Вы уверены, что хотите удалить этот ключ?')) {
+                    keys = keys.filter(key => key.id !== keyId);
+                    saveKeys();
+                    renderKeys();
+                }
+            }
+            
+            // Функция для копирования ключа в буфер обмена
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showNotification('Ключ скопирован!');
+                }).catch(err => {
+                    showNotification('Ошибка копирования');
+                    console.error('Ошибка копирования:', err);
+                });
+            }
+            
+            // Показываем уведомление
+            function showNotification(message) {
+                notification.textContent = message;
+                notification.style.display = 'block';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 2000);
+            }
+            
+            // Сохраняем ключи в localStorage
+            function saveKeys() {
+                localStorage.setItem('keys', JSON.stringify(keys));
+            }
+            
+            // Форматирование времени
+            function formatTime(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+                
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // Обновление таймеров
+            function updateTimers() {
+                let needUpdate = false;
+                const now = new Date().getTime();
+                
+                keys = keys.map(key => {
+                    if (key.used) {
+                        const timePassed = now - key.usedAt;
+                        const timeLeft = 24 * 60 * 60 * 1000 - timePassed;
+                        
+                        if (timeLeft <= 0) {
+                            needUpdate = true;
+                            return {
+                                ...key,
+                                used: false,
+                                usedAt: null
+                            };
+                        }
+                    }
+                    return key;
+                });
+                
+                if (needUpdate) {
+                    saveKeys();
+                }
+                
+                renderKeys();
+            }
+            
+            // Отображаем список ключей
+            function renderKeys() {
+                keysList.innerHTML = '';
+                
+                if (keys.length === 0) {
+                    keysList.innerHTML = '<p>Нет сохранённых ключей</p>';
+                    return;
+                }
+                
+                const now = new Date().getTime();
+                
+                keys.forEach(key => {
+                    const keyItem = document.createElement('div');
+                    keyItem.className = `key-item ${key.used ? 'used' : ''}`;
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'key-name';
+                    nameSpan.textContent = key.name;
+                    nameSpan.title = key.name;
+                    
+                    const valueContainer = document.createElement('div');
+                    valueContainer.className = 'key-value-container';
+                    
+                    const valueSpan = document.createElement('span');
+                    valueSpan.className = 'key-value';
+                    valueSpan.textContent = key.value.length > 30 ? key.value.substring(0, 30) + '...' : key.value;
+                    valueSpan.title = "Наведите для просмотра полного ключа";
+                    
+                    const fullValueSpan = document.createElement('span');
+                    fullValueSpan.className = 'key-value full';
+                    fullValueSpan.textContent = key.value;
+                    
+                    valueContainer.appendChild(valueSpan);
+                    valueContainer.appendChild(fullValueSpan);
+                    
+                    const timeLeftSpan = document.createElement('span');
+                    timeLeftSpan.className = 'time-left';
+                    
+                    if (key.used) {
+                        const timePassed = now - key.usedAt;
+                        const timeLeft = 24 * 60 * 60 * 1000 - timePassed;
+                        
+                        if (timeLeft > 0) {
+                            const secondsLeft = Math.floor(timeLeft / 1000);
+                            timeLeftSpan.textContent = `⌛ ${formatTime(secondsLeft)}`;
+                        } else {
+                            timeLeftSpan.textContent = 'Доступен';
+                        }
+                    }
+                    
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'actions';
+                    
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.textContent = 'Копировать';
+                    copyBtn.addEventListener('click', () => copyToClipboard(key.value));
+                    
+                    const useBtn = document.createElement('button');
+                    useBtn.className = 'use-btn';
+                    useBtn.textContent = 'Заблокировать';
+                    useBtn.disabled = key.used;
+                    useBtn.addEventListener('click', () => markAsUsed(key.id));
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-btn';
+                    removeBtn.textContent = 'Удалить';
+                    removeBtn.addEventListener('click', () => removeKey(key.id));
+                    
+                    actionsDiv.appendChild(copyBtn);
+                    actionsDiv.appendChild(useBtn);
+                    actionsDiv.appendChild(removeBtn);
+                    
+                    keyItem.appendChild(nameSpan);
+                    keyItem.appendChild(valueContainer);
+                    keyItem.appendChild(timeLeftSpan);
+                    keyItem.appendChild(actionsDiv);
+                    
+                    keysList.appendChild(keyItem);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
