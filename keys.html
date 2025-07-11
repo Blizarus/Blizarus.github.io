@@ -18,6 +18,8 @@
             --key-item-bg: #ffffff;
             --key-item-used-bg: #f9f9f9;
             --key-item-border: #eeeeee;
+            --active-key-bg: #e8f5e9;
+            --active-key-border: #c8e6c9;
         }
 
         .dark-mode {
@@ -33,6 +35,8 @@
             --key-item-bg: #2d2d2d;
             --key-item-used-bg: #252525;
             --key-item-border: #444444;
+            --active-key-bg: #1b5e20;
+            --active-key-border: #2e7d32;
         }
 
         body {
@@ -106,6 +110,21 @@
             color: #999;
         }
 
+        .key-item.active {
+            background-color: var(--active-key-bg);
+            border-color: var(--active-key-border);
+            position: relative;
+        }
+
+        .key-item.active::before {
+            content: "★";
+            position: absolute;
+            left: 5px;
+            top: 5px;
+            color: var(--use-btn);
+            font-size: 16px;
+        }
+
         .key-name {
             font-weight: bold;
             min-width: 80px;
@@ -114,6 +133,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             flex: 1 0 100px;
+            margin-left: 15px;
         }
 
         .key-value-container {
@@ -183,7 +203,7 @@
         }
 
         .actions button {
-            flex: 1 0 80px;
+            flex: 1 0 60px;
             font-size: 14px;
             padding: 8px 5px;
         }
@@ -202,6 +222,10 @@
 
         .use-btn {
             background: var(--use-btn);
+        }
+
+        .active-btn {
+            background: var(--primary-btn);
         }
 
         .remove-btn {
@@ -232,6 +256,36 @@
             color: white;
             text-align: center;
             font-size: 14px;
+        }
+
+        .confirm-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .confirm-content {
+            background: var(--bg-color);
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .confirm-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
         }
 
         @media (max-width: 600px) {
@@ -272,13 +326,23 @@
         <h2>Добавить новый ключ</h2>
         <input type="text" id="keyName" placeholder="Название ключа">
         <input type="text" id="keyValue" placeholder="Значение ключа">
-        <button id="addKeyBtn">Добавить ключ</button>
+        <button id="addKeyBtn">Добавить</button>
     </div>
     
     <h2>Мои ключи</h2>
     <div id="keysList"></div>
     
     <div class="notification" id="notification">Ключ скопирован!</div>
+    
+    <div class="confirm-dialog" id="confirmDialog">
+        <div class="confirm-content">
+            <h3 id="confirmMessage">Вы уверены, что хотите снять блокировку с этого ключа?</h3>
+            <div class="confirm-buttons">
+                <button id="confirmCancel">Отмена</button>
+                <button id="confirmOk">OK</button>
+            </div>
+        </div>
+    </div>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -288,6 +352,10 @@
             const keysList = document.getElementById('keysList');
             const notification = document.getElementById('notification');
             const themeToggle = document.getElementById('themeToggle');
+            const confirmDialog = document.getElementById('confirmDialog');
+            const confirmMessage = document.getElementById('confirmMessage');
+            const confirmCancel = document.getElementById('confirmCancel');
+            const confirmOk = document.getElementById('confirmOk');
             
             // Загружаем настройки темы из localStorage
             if (localStorage.getItem('darkMode') === 'true') {
@@ -297,6 +365,12 @@
             
             // Загружаем ключи из localStorage при загрузке страницы
             let keys = JSON.parse(localStorage.getItem('keys')) || [];
+            
+            // Загружаем активный ключ из localStorage
+            let activeKeyId = localStorage.getItem('activeKeyId');
+            if (activeKeyId) {
+                activeKeyId = parseInt(activeKeyId);
+            }
             
             // Отображаем ключи
             renderKeys();
@@ -323,7 +397,8 @@
                         name: name,
                         value: value,
                         used: false,
-                        usedAt: null
+                        usedAt: null,
+                        isActive: false
                     });
                     
                     saveKeys();
@@ -351,13 +426,77 @@
                 renderKeys();
             }
             
+            // Функция для отметки ключа как активного (используемого)
+            function markAsActive(keyId) {
+                // Сначала снимаем активность со всех ключей
+                keys = keys.map(key => {
+                    return {...key, isActive: false};
+                });
+                
+                // Затем помечаем выбранный ключ как активный
+                keys = keys.map(key => {
+                    if (key.id === keyId) {
+                        localStorage.setItem('activeKeyId', key.id);
+                        return {
+                            ...key,
+                            isActive: true
+                        };
+                    }
+                    return key;
+                });
+                
+                saveKeys();
+                renderKeys();
+            }
+            
+            // Функция для снятия активности с ключа
+            function unmarkAsActive(keyId) {
+                keys = keys.map(key => {
+                    if (key.id === keyId) {
+                        localStorage.removeItem('activeKeyId');
+                        return {
+                            ...key,
+                            isActive: false
+                        };
+                    }
+                    return key;
+                });
+                
+                saveKeys();
+                renderKeys();
+            }
+            
+            // Функция для снятия блокировки с ключа
+            function unmarkAsUsed(keyId) {
+                showConfirmDialog('Вы уверены, что хотите снять блокировку с этого ключа?', function() {
+                    keys = keys.map(key => {
+                        if (key.id === keyId) {
+                            return {
+                                ...key,
+                                used: false,
+                                usedAt: null
+                            };
+                        }
+                        return key;
+                    });
+                    
+                    saveKeys();
+                    renderKeys();
+                });
+            }
+            
             // Функция для удаления ключа
             function removeKey(keyId) {
-                if (confirm('Вы уверены, что хотите удалить этот ключ?')) {
+                showConfirmDialog('Вы уверены, что хотите удалить этот ключ?', function() {
+                    // Если удаляем активный ключ, очищаем activeKeyId
+                    if (activeKeyId === keyId) {
+                        localStorage.removeItem('activeKeyId');
+                    }
+                    
                     keys = keys.filter(key => key.id !== keyId);
                     saveKeys();
                     renderKeys();
-                }
+                });
             }
             
             // Функция для копирования ключа в буфер обмена
@@ -377,6 +516,27 @@
                 setTimeout(() => {
                     notification.style.display = 'none';
                 }, 2000);
+            }
+            
+            // Показываем диалог подтверждения
+            function showConfirmDialog(message, callback) {
+                confirmMessage.textContent = message;
+                confirmDialog.style.display = 'flex';
+                
+                const handleConfirm = (result) => {
+                    confirmDialog.style.display = 'none';
+                    if (result && callback) callback();
+                    
+                    // Удаляем обработчики после использования
+                    confirmOk.removeEventListener('click', okHandler);
+                    confirmCancel.removeEventListener('click', cancelHandler);
+                };
+                
+                const okHandler = () => handleConfirm(true);
+                const cancelHandler = () => handleConfirm(false);
+                
+                confirmOk.addEventListener('click', okHandler);
+                confirmCancel.addEventListener('click', cancelHandler);
             }
             
             // Сохраняем ключи в localStorage
@@ -417,9 +577,8 @@
                 
                 if (needUpdate) {
                     saveKeys();
+                    renderKeys();
                 }
-                
-                renderKeys();
             }
             
             // Отображаем список ключей
@@ -435,7 +594,7 @@
                 
                 keys.forEach(key => {
                     const keyItem = document.createElement('div');
-                    keyItem.className = `key-item ${key.used ? 'used' : ''}`;
+                    keyItem.className = `key-item ${key.used ? 'used' : ''} ${key.isActive ? 'active' : ''}`;
                     
                     const nameSpan = document.createElement('span');
                     nameSpan.className = 'key-name';
@@ -489,14 +648,34 @@
                     
                     const copyBtn = document.createElement('button');
                     copyBtn.className = 'copy-btn';
-                    copyBtn.textContent = 'Копировать';
+                    copyBtn.textContent = 'Копир.';
                     copyBtn.addEventListener('click', () => copyToClipboard(key.value));
                     
-                    const useBtn = document.createElement('button');
-                    useBtn.className = 'use-btn';
-                    useBtn.textContent = 'Заблокировать';
-                    useBtn.disabled = key.used;
-                    useBtn.addEventListener('click', () => markAsUsed(key.id));
+                    let useBtn;
+                    if (key.used) {
+                        useBtn = document.createElement('button');
+                        useBtn.className = 'unlock-btn';
+                        useBtn.textContent = 'Разблок.';
+                        useBtn.addEventListener('click', () => unmarkAsUsed(key.id));
+                    } else {
+                        useBtn = document.createElement('button');
+                        useBtn.className = 'use-btn';
+                        useBtn.textContent = 'Блокир.';
+                        useBtn.addEventListener('click', () => markAsUsed(key.id));
+                    }
+                    
+                    let activeBtn;
+                    if (key.isActive) {
+                        activeBtn = document.createElement('button');
+                        activeBtn.className = 'active-btn';
+                        activeBtn.textContent = 'Активен';
+                        activeBtn.addEventListener('click', () => unmarkAsActive(key.id));
+                    } else {
+                        activeBtn = document.createElement('button');
+                        activeBtn.className = 'use-btn';
+                        activeBtn.textContent = 'Использ.';
+                        activeBtn.addEventListener('click', () => markAsActive(key.id));
+                    }
                     
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'remove-btn';
@@ -505,6 +684,7 @@
                     
                     actionsDiv.appendChild(copyBtn);
                     actionsDiv.appendChild(useBtn);
+                    actionsDiv.appendChild(activeBtn);
                     actionsDiv.appendChild(removeBtn);
                     
                     keyItem.appendChild(nameSpan);
