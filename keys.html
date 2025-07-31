@@ -20,6 +20,8 @@
             --key-item-border: #eeeeee;
             --active-key-bg: #e8f5e9;
             --active-key-border: #c8e6c9;
+            --export-btn: #5bc0de;
+            --import-btn: #5cb85c;
         }
 
         .dark-mode {
@@ -37,6 +39,8 @@
             --key-item-border: #444444;
             --active-key-bg: #1b5e20;
             --active-key-border: #2e7d32;
+            --export-btn: #0275d8;
+            --import-btn: #5cb85c;
         }
 
         body {
@@ -63,7 +67,7 @@
             border: 1px solid var(--border-color);
         }
 
-        input, button {
+        input, button, select {
             padding: 10px;
             margin: 5px 0;
             border-radius: 4px;
@@ -232,6 +236,14 @@
             background: var(--remove-btn);
         }
 
+        .export-btn {
+            background: var(--export-btn);
+        }
+
+        .import-btn {
+            background: var(--import-btn);
+        }
+
         .notification {
             position: fixed;
             top: 20px;
@@ -288,6 +300,45 @@
             margin-top: 20px;
         }
 
+        .block-time-selector {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .block-time-option {
+            flex: 1;
+        }
+
+        .block-time-option input {
+            display: none;
+        }
+
+        .block-time-option label {
+            display: block;
+            padding: 10px;
+            background: var(--input-bg);
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        .block-time-option input:checked + label {
+            background: var(--primary-btn);
+            color: white;
+        }
+
+        .import-export-section {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .import-export-section button {
+            flex: 1;
+        }
+
         @media (max-width: 600px) {
             body {
                 padding: 10px;
@@ -315,6 +366,10 @@
             .key-value {
                 width: 100%;
             }
+
+            .import-export-section {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -326,11 +381,28 @@
         <h2>Добавить новый ключ</h2>
         <input type="text" id="keyName" placeholder="Название ключа">
         <input type="text" id="keyValue" placeholder="Значение ключа">
+        
+        <div class="block-time-selector">
+            <div class="block-time-option">
+                <input type="radio" id="block24hours" name="blockTime" value="24" checked>
+                <label for="block24hours">Блокировка 24 часа</label>
+            </div>
+            <div class="block-time-option">
+                <input type="radio" id="blockTill3am" name="blockTime" value="till3am">
+                <label for="blockTill3am">Блокировка до 3:00 МСК</label>
+            </div>
+        </div>
+        
         <button id="addKeyBtn">Добавить</button>
     </div>
     
     <h2>Мои ключи</h2>
     <div id="keysList"></div>
+    
+    <div class="import-export-section">
+        <button id="exportBtn" class="export-btn">Экспорт ключей</button>
+        <button id="importBtn" class="import-btn">Импорт ключей</button>
+    </div>
     
     <div class="notification" id="notification">Ключ скопирован!</div>
     
@@ -344,6 +416,8 @@
         </div>
     </div>
     
+    <input type="file" id="fileInput" style="display: none;" accept=".json">
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const addKeyBtn = document.getElementById('addKeyBtn');
@@ -356,6 +430,11 @@
             const confirmMessage = document.getElementById('confirmMessage');
             const confirmCancel = document.getElementById('confirmCancel');
             const confirmOk = document.getElementById('confirmOk');
+            const exportBtn = document.getElementById('exportBtn');
+            const importBtn = document.getElementById('importBtn');
+            const fileInput = document.getElementById('fileInput');
+            const block24hours = document.getElementById('block24hours');
+            const blockTill3am = document.getElementById('blockTill3am');
             
             // Загружаем настройки темы из localStorage
             if (localStorage.getItem('darkMode') === 'true') {
@@ -372,6 +451,14 @@
                 activeKeyId = parseInt(activeKeyId);
             }
             
+            // Загружаем настройку времени блокировки
+            const savedBlockTime = localStorage.getItem('blockTime') || '24';
+            if (savedBlockTime === '24') {
+                block24hours.checked = true;
+            } else {
+                blockTill3am.checked = true;
+            }
+            
             // Отображаем ключи
             renderKeys();
             
@@ -386,6 +473,19 @@
                 themeToggle.textContent = isDark ? '☀️ Светлая тема' : '🌙 Тёмная тема';
             });
             
+            // Сохранение выбранного времени блокировки
+            block24hours.addEventListener('change', function() {
+                if (this.checked) {
+                    localStorage.setItem('blockTime', '24');
+                }
+            });
+            
+            blockTill3am.addEventListener('change', function() {
+                if (this.checked) {
+                    localStorage.setItem('blockTime', 'till3am');
+                }
+            });
+            
             // Добавление нового ключа
             addKeyBtn.addEventListener('click', function() {
                 const name = keyNameInput.value.trim();
@@ -398,7 +498,8 @@
                         value: value,
                         used: false,
                         usedAt: null,
-                        isActive: false
+                        isActive: false,
+                        blockType: block24hours.checked ? '24hours' : 'till3am'
                     });
                     
                     saveKeys();
@@ -409,14 +510,45 @@
                 }
             });
             
-            // Функция для отметки ключа как использованного (блокировка на 24 часа)
+            // Функция для расчета времени до 3:00 по МСК
+            function getTimeTill3amMSK() {
+                const now = new Date();
+                const mskOffset =   60 * 60 * 1000; // MSK is UTC+3
+                const mskTime = new Date(now.getTime() + mskOffset);
+                
+                let target = new Date(mskTime);
+                target.setHours(4, 0, 0, 0);
+                
+                // If it's already past 3:00 MSK today, set target to 3:00 MSK tomorrow
+                if (mskTime >= target) {
+                    target.setDate(target.getDate() + 1);
+                }
+                
+                // Convert back to local time
+                const localTarget = new Date(target.getTime() - mskOffset);
+                return localTarget.getTime();
+            }
+            
+            // Функция для отметки ключа как использованного
             function markAsUsed(keyId) {
+                const blockType = block24hours.checked ? '24hours' : 'till3am';
+                const usedAt = new Date().getTime();
+                let unlockAt;
+                
+                if (blockType === '24hours') {
+                    unlockAt = usedAt + 24 * 60 * 60 * 1000;
+                } else {
+                    unlockAt = getTimeTill3amMSK();
+                }
+                
                 keys = keys.map(key => {
                     if (key.id === keyId) {
                         return {
                             ...key,
                             used: true,
-                            usedAt: new Date().getTime()
+                            usedAt: usedAt,
+                            unlockAt: unlockAt,
+                            blockType: blockType
                         };
                     }
                     return key;
@@ -474,7 +606,8 @@
                             return {
                                 ...key,
                                 used: false,
-                                usedAt: null
+                                usedAt: null,
+                                unlockAt: null
                             };
                         }
                         return key;
@@ -508,6 +641,58 @@
                     console.error('Ошибка копирования:', err);
                 });
             }
+            
+            // Экспорт ключей в файл
+            exportBtn.addEventListener('click', function() {
+                const dataStr = JSON.stringify(keys, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = 'keys_export_' + new Date().toISOString().slice(0, 10) + '.json';
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+                
+                showNotification('Ключи экспортированы!');
+            });
+            
+            // Импорт ключей из файла
+            importBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedKeys = JSON.parse(e.target.result);
+                        
+                        if (!Array.isArray(importedKeys)) {
+                            throw new Error('Некорректный формат файла');
+                        }
+                        
+                        showConfirmDialog(`Вы уверены, что хотите импортировать ${importedKeys.length} ключей? Существующие ключи будут сохранены.`, function() {
+                            // Добавляем новые ключи, избегая дубликатов по ID
+                            const existingIds = keys.map(k => k.id);
+                            const newKeys = importedKeys.filter(k => !existingIds.includes(k.id));
+                            
+                            keys = [...keys, ...newKeys];
+                            saveKeys();
+                            renderKeys();
+                            showNotification(`Импортировано ${newKeys.length} ключей`);
+                        });
+                    } catch (error) {
+                        showNotification('Ошибка импорта: ' + error.message);
+                        console.error('Ошибка импорта:', error);
+                    }
+                };
+                reader.readAsText(file);
+                fileInput.value = ''; // Сбрасываем значение, чтобы можно было загрузить тот же файл снова
+            });
             
             // Показываем уведомление
             function showNotification(message) {
@@ -554,21 +739,21 @@
             }
             
             // Обновление таймеров
-            function updateTimers() {
+             function updateTimers() {
                 let needUpdate = false;
                 const now = new Date().getTime();
                 
                 keys = keys.map(key => {
-                    if (key.used) {
-                        const timePassed = now - key.usedAt;
-                        const timeLeft = 24 * 60 * 60 * 1000 - timePassed;
+                    if (key.used && key.unlockAt) {
+                        const timeLeft = key.unlockAt - now;
                         
                         if (timeLeft <= 0) {
                             needUpdate = true;
                             return {
                                 ...key,
                                 used: false,
-                                usedAt: null
+                                usedAt: null,
+                                unlockAt: null
                             };
                         }
                     }
@@ -577,8 +762,9 @@
                 
                 if (needUpdate) {
                     saveKeys();
-                    renderKeys();
                 }
+                // Всегда обновляем отображение, даже если ключи не разблокировались
+                renderKeys();
             }
             
             // Отображаем список ключей
@@ -631,13 +817,16 @@
                     const timeLeftSpan = document.createElement('span');
                     timeLeftSpan.className = 'time-left';
                     
-                    if (key.used) {
-                        const timePassed = now - key.usedAt;
-                        const timeLeft = 24 * 60 * 60 * 1000 - timePassed;
+                    if (key.used && key.unlockAt) {
+                        const timeLeft = key.unlockAt - now;
                         
                         if (timeLeft > 0) {
                             const secondsLeft = Math.floor(timeLeft / 1000);
                             timeLeftSpan.textContent = `⌛ ${formatTime(secondsLeft)}`;
+                            
+                            if (key.blockType === 'till3am') {
+                                timeLeftSpan.textContent += ' (до 3:00 МСК)';
+                            }
                         } else {
                             timeLeftSpan.textContent = 'Доступен';
                         }
